@@ -58,11 +58,14 @@
               "fallback": "Duis aute irure dolor in reprehenderit"
             }
           ]
-        }
+        },
+        "file_ids": []
       }
     },
     "response": {
       "id": "34b52dfdd69f485bb0e70d1879",
+      "user_id": "34b52dfdd69f485bb0e70d1879",
+      "channel_id": "34b52dfdd69f485bb0e70d1879",
       "message": "message",
       "props": {
         "attachments": [

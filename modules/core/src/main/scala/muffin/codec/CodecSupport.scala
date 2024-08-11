@@ -50,7 +50,8 @@ trait JsonRequestBuilder[T, To[_]]() { self =>
 trait JsonResponseBuilder[From[_], Params <: Tuple] {
   def field[X: From](name: String): JsonResponseBuilder[From, X *: Params]
 
-  def fieldMap[X: From, B](name: String)(f: X => B): JsonResponseBuilder[From, B *: Params]
+  def fieldMap[X: From, B](name: String)(f: X => Either[MuffinError.Decoding, B])
+      : JsonResponseBuilder[From, B *: Params]
 
   def rawField(name: String): JsonResponseBuilder[From, Option[String] *: Params]
 
@@ -303,6 +304,24 @@ trait CodecSupportLow[To[_], From[_]] extends PrimitivesSupport[To, From] {
       .field[String]("id")
       .build(RoleInfo.apply.tupled)
   // Roles
+
+  // Files
+
+  given UploadFileResponseFrom: From[UploadFileResponse] =
+    parsing
+      .field[List[FileInfo]]("file_infos")
+      .build {
+        case infos *: EmptyTuple => UploadFileResponse(infos)
+      }
+
+  given FileInfoFrom: From[FileInfo] =
+    parsing
+      .field[String]("name")
+      .field[UserId]("user_id")
+      .field[FileId]("id")
+      .build(FileInfo.apply)
+
+  // Files
 
   given DialogTo: To[Dialog] =
     json[Dialog]
@@ -574,7 +593,7 @@ trait CodecSupportLow[To[_], From[_]] extends PrimitivesSupport[To, From] {
 
   given AttachmentFrom: From[Attachment] =
     parsing
-      .fieldMap[Option[List[Action]], List[Action]]("actions")(_.getOrElse(Nil))
+      .fieldMap[Option[List[Action]], List[Action]]("actions")(_.getOrElse(Nil).asRight)
       .field[Option[String]]("footer_icon")
       .field[Option[String]]("footer")
       .field[Option[String]]("thumb_url")
@@ -606,12 +625,28 @@ trait CodecSupportLow[To[_], From[_]] extends PrimitivesSupport[To, From] {
 
   given PostFrom: From[Post] =
     parsing
-      .field[Option[Props]]("props")
+      .fieldMap[Option[Props], Props]("props")(_.getOrElse(Props.empty).asRight)
+      .field[Option[List[FileId]]]("file_ids")
+      .field[ChannelId]("channel_id")
+      .field[UserId]("user_id")
       .field[String]("message")
       .field[MessageId]("id")
-      .build {
-        case id *: message *: props *: EmptyTuple => Post(id, message, props.getOrElse(Props.empty))
-      }
+      .build(Post.apply.tupled)
+
+  given PostedEventDataFrom: From[PostedEventData] =
+    parsing
+      .fieldMap[String, Post]("post")(Decode[Post].apply)
+      .field[String]("sender_name")
+      .field[ChannelType]("channel_type")
+      .field[String]("channel_name")
+      .build(PostedEventData.apply.tupled)
+
+  given ChannelTypeFrom: From[ChannelType] =
+    parsing[String, ChannelType] {
+      case "O"     => ChannelType.Channel
+      case "D"     => ChannelType.Direct
+      case unknown => ChannelType.Unknown(unknown)
+    }
 
   given EventFrom[A: From]: From[Event[A]] =
     parsing

@@ -44,20 +44,30 @@ class ZioApiTest extends ApiTest[JsonEncoder, JsonDecoder]("zio", codec) {
           }
         )
 
+      def requestRawData[In: JsonEncoder](
+          url: String,
+          method: Method,
+          body: Body[In],
+          headers: Map[String, String],
+          params: Params => Params
+      ): IO[Array[Byte]] = IO("wubba lubba dub dub".getBytes)
+
       def websocketWithListeners(
           uri: URI,
           headers: Map[String, String],
           backoffSettings: BackoffSettings,
           listeners: List[EventListener[IO]]
-      ): IO[Unit] = events.traverse_(event => listeners.traverse_(_.onEvent(event)))
+      ): IO[Unit] = events.flatMap(_.traverse_(event => listeners.traverse_(_.onEvent(event))))
 
-      private val events = List(
-        Event(
-          EventType.Hello,
-          RawJson.from(domain.TestObject.default.toJson)
+      private val events = loadResource("websockets/posting/postingWithFileIds.json").map(postingEvent =>
+        List(
+          Event(
+            EventType.Hello,
+            RawJson.from(domain.TestObject.default.toJson)
+          ),
+          Event(EventType.Posted, RawJson.from(postingEvent))
         )
       )
-
     }
   }
 

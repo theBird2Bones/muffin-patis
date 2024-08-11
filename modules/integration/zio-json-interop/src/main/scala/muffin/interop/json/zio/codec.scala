@@ -1,6 +1,9 @@
 package muffin.interop.json.zio
 
 import java.time.{Instant, LocalDateTime, ZoneId}
+import scala.reflect.ClassTag
+
+import cats.syntax.all.*
 
 import zio.json.*
 import zio.json.JsonDecoder.{JsonError, UnsafeJson}
@@ -57,6 +60,10 @@ trait CodecLow extends CodecSupport[JsonEncoder, JsonDecoder] {
   given IntTo: JsonEncoder[Int] = JsonEncoder.int
 
   given IntFrom: JsonDecoder[Int] = JsonDecoder.int
+
+  given ByteTo: JsonEncoder[Byte] = JsonEncoder.byte
+
+  given ByteFrom: JsonDecoder[Byte] = JsonDecoder.byte
 
   given LongTo: JsonEncoder[Long] = JsonEncoder.long
 
@@ -127,11 +134,18 @@ trait CodecLow extends CodecSupport[JsonEncoder, JsonDecoder] {
         summon[JsonDecoder[X]].asInstanceOf[JsonDecoder[Any]] :: decoders
       )
 
-    def fieldMap[X: JsonDecoder, B](name: String)(f: X => B): JsonResponseBuilder[JsonDecoder, B *: Params] =
+    def fieldMap[X: JsonDecoder, B](name: String)(
+        f: X => Either[MuffinError.Decoding, B]
+    ): JsonResponseBuilder[JsonDecoder, B *: Params] = {
+      summon[JsonDecoder[Option[X]]]
+      summon[JsonDecoder[String]]
       new ZioResponseBuilder[B *: Params](
         name :: stateNames,
-        summon[JsonDecoder[X]].map(f).asInstanceOf[JsonDecoder[Any]] :: decoders
+        summon[JsonDecoder[X]]
+          .mapOrFail(x => f(x).leftMap(_.message))
+          .asInstanceOf[JsonDecoder[Any]] :: decoders
       )
+    }
 
     override def internal[X: JsonDecoder](name: String): JsonResponseBuilder[JsonDecoder, X *: Params] =
       new ZioResponseBuilder[X *: Params](
