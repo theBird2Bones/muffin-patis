@@ -62,10 +62,10 @@ class ZioApiTest extends ApiTest[JsonEncoder, JsonDecoder]("zio", codec) {
       private val events = loadResource("websockets/posting/postingWithFileIds.json").map(postingEvent =>
         List(
           Event(
-            EventType.Hello,
+            EventType.KnownEventType.Hello,
             RawJson.from(domain.TestObject.default.toJson)
           ),
-          Event(EventType.Posted, RawJson.from(postingEvent))
+          Event(EventType.KnownEventType.Posted, RawJson.from(postingEvent))
         )
       )
     }

@@ -291,7 +291,7 @@ trait ApiTest[To[_], From[_]](integration: String, codecSupport: CodecSupport[To
           .websocket()
           .flatMap(
             _.addListener[domain.TestObject](
-              EventType.Hello,
+              EventType.KnownEventType.Hello,
               event => listenedEvent.complete(event).void
             )
               .connect()
@@ -310,7 +310,7 @@ trait ApiTest[To[_], From[_]](integration: String, codecSupport: CodecSupport[To
           .websocket()
           .flatMap(
             _.addListener[String](
-              EventType.Hello,
+              EventType.KnownEventType.Hello,
               event =>
                 listenedEvents.offer(domain.TestObject.default)
             )
@@ -325,7 +325,7 @@ trait ApiTest[To[_], From[_]](integration: String, codecSupport: CodecSupport[To
           .websocket()
           .flatMap(
             _.addListener[domain.TestObject](
-              EventType.Hello,
+              EventType.KnownEventType.Hello,
               event => listenedEvents.offer(event)
             )
               .connect()
@@ -347,7 +347,7 @@ trait ApiTest[To[_], From[_]](integration: String, codecSupport: CodecSupport[To
           .websocket()
           .flatMap(
             _.addListener[PostedEventData](
-              EventType.Posted,
+              EventType.KnownEventType.Posted,
               event => listenedEvent.complete(event).void
             )
               .connect()

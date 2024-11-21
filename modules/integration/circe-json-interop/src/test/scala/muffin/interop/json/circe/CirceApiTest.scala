@@ -63,10 +63,10 @@ class CirceApiTest extends ApiTest[Encoder, Decoder]("circe", codec) {
     .map(postingEvent =>
       List(
         Event(
-          EventType.Hello,
+          EventType.KnownEventType.Hello,
           RawJson.from(Encoder[domain.TestObject].apply(domain.TestObject.default).toString)
         ),
-        Event(EventType.Posted, RawJson.from(postingEvent))
+        Event(EventType.KnownEventType.Posted, RawJson.from(postingEvent))
       )
     )
 

@@ -1,7 +1,6 @@
 package muffin.model.websocket
 
 import scala.concurrent.Future
-import scala.util.Try
 
 import muffin.api.ApiTestSupport
 import muffin.model.websocket.domain.*
@@ -61,16 +60,19 @@ class EntityTypeParsingTest() extends ApiTestSupport {
 
       val result: List[EventType] = rawTypes.map(EventType.fromSnakeCase)
 
-      Future.successful(assert(result.length == EventType.values.length))
+      Future.successful(assert(result.length == EventType.KnownEventType.values.length))
     }
-    Scenario(s"Parse from snake case, incorrect kebab case raw types $integration") {
-      val rawTypes = List(
-        "added-to-team"
+    Scenario(s"Parse from snake case custom types $integration") {
+      val rawType = "everything you want here"
+
+      val result = EventType.fromSnakeCase(rawType)
+
+      Future.successful(
+        result match {
+          case _: EventType.KnownEventType  => assert(false, "must be a custom type")
+          case EventType.CustomEventType(_) => assert(true)
+        }
       )
-
-      val result = rawTypes.map(tpe => Try(EventType.fromSnakeCase(tpe)))
-
-      Future.successful(assert(result.head.isFailure))
     }
   }
 
